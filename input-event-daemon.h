@@ -44,7 +44,6 @@ typedef struct key_event {
     const char *exec;
 } key_event_t;
 
-
 typedef struct idle_event {
     unsigned long timeout;
     const char  *exec;
@@ -56,6 +55,16 @@ typedef struct switch_event {
     const char *exec;
 } switch_event_t;
 
+typedef struct touchTEST_event {
+    signed int x;
+    signed int y;
+    signed int w;
+    signed int h;
+    signed int cx;
+    signed int cy;
+    const char *exec;
+} touchTEST_event_t;
+
 /**
  * Event Lists 
  *
@@ -64,10 +73,12 @@ typedef struct switch_event {
 key_event_t       key_events[MAX_EVENTS];
 idle_event_t     idle_events[MAX_EVENTS];
 switch_event_t switch_events[MAX_EVENTS];
+touchTEST_event_t touchTEST_events[MAX_EVENTS];
 
 size_t    key_event_n = 0;
 size_t   idle_event_n = 0;
 size_t switch_event_n = 0;
+size_t touchTEST_event_n = 0;
 
 /**
  * Functions 
@@ -105,6 +116,7 @@ void                config_parse_file();
 static const char   *config_key_event(char *shortcut, char *exec);
 static const char   *config_idle_event(char *timeout, char *exec);
 static const char   *config_switch_event(char *switchcode, char *exec);
+static const char   *config_touchTEST_event(char *switchcode, char *exec);
 static unsigned int config_min_timeout(unsigned long a, unsigned long b);
 static char         *config_trim_string(char *str);
 

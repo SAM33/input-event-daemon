@@ -1,13 +1,22 @@
 '\" t
 .\"     Title: input-event-daemon
 .\"    Author: [see the "AUTHOR" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/20/2010
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 10/08/2019
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "INPUT\-EVENT\-DAEMON" "8" "03/20/2010" "\ \&" "\ \&"
+.TH "INPUT\-EVENT\-DAEMON" "8" "10/08/2019" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -102,6 +111,10 @@ RADIO:0 = ifconfig wlan0 down
 [Idle]
 1h 30m = vbetool dpms off
 reset  = vbetool dpms on
+
+[TouchTEST]
+340,400,3440,1860 = echo AAA
+340,2260,3440,1860 = echo BBB
 .fi
 .if n \{\
 .RE
@@ -127,6 +140,11 @@ This section defines commands which are executed when a specified switch is set 
 The commands defined in this section are executed after all input devices did not send any events in the specified amount of time\&. The special key
 \fIRESET\fR
 is triggered when returning from idle\&.
+.RE
+.PP
+\fB[TouchTEST]\fR
+.RS 4
+This section defines the commands that are executed when a touch event occurs in a specified square area\&. The start point x,y and square area size width,height are seprated by commas like this: x,y,w,h
 .RE
 .if n \{\
 .sp
@@ -182,6 +200,5 @@ Reviewed by Oliver Reissig\&.
 .PP
 The latest version of this program can be found at:
 .RS 4
-
 http://github\&.com/gandro/input\-event\-daemon
 .RE

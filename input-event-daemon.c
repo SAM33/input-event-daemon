@@ -296,6 +296,55 @@ static switch_event_t
     return fired_switch_event;
 }
 
+int touchTEST_check_touch_event(touchTEST_event_t *a, touchTEST_event_t *b) {
+    // check touchTEST_event a inside touchTEST_event_b or not
+    if((a->cx >= b->x) && (a->cy >= b->y)) {
+        if((a->cx <= (b->x + b->w)) && (a->cy <= (b->y + b->h))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static touchTEST_event_t
+*touchTEST_event_parse(int x, int y, const char *src) {
+    int i;
+    int ret;
+    touchTEST_event_t *fired_touchTEST_event = NULL;
+    touchTEST_event_t current_touchTEST_event = {
+        .cx = x,
+        .cy = y
+    };
+
+    if(conf.monitor) {
+        printf("%s:\n  touchTEST   : (%d,%d)\n\n",
+            src,
+            current_touchTEST_event.cx,
+            current_touchTEST_event.cy
+        );
+    }
+
+    for(i=0 ; i<touchTEST_event_n ; i++) {
+        if(touchTEST_check_touch_event(&current_touchTEST_event, &touchTEST_events[i]))
+            fired_touchTEST_event = &touchTEST_events[i];
+    }
+
+    if(conf.verbose && fired_touchTEST_event) {
+        fprintf(stderr, "\ntouchTEST_event:\n"
+                        "  tocuh@   : (%d,%d)\n"
+                        "  source   : %s\n"
+                        "  exec     : \"%s\"\n\n",
+                        fired_touchTEST_event->cx,
+                        fired_touchTEST_event->cy,
+                        src,
+                        fired_touchTEST_event->exec
+        );
+    }
+
+    return fired_touchTEST_event;
+}
+
+
 void input_open_all_listener() {
     int i, listen_len = 0;
     char filename[32];
@@ -361,6 +410,51 @@ void input_list_devices() {
     }
 }
 
+static int single_touch_event_print_and_parse(unsigned int code, int value, const char *src) {
+    static int pressure_flag = 0;
+    static int x = 0;
+    static int x_flag = 0;
+    static int y = 0;
+    static int y_flag = 0;
+    int report_x;
+    int report_y;
+    touchTEST_event_t *fired_touchTEST_event;
+
+    switch (code) {
+        case ABS_X:
+            x = value;
+            x_flag = 1;
+            break;
+        case ABS_Y:
+            y = value;
+            y_flag = 1;
+            break;
+        case ABS_PRESSURE:
+            pressure_flag = 1;
+    }
+    if (pressure_flag) {
+        if (x_flag && y_flag) {
+            report_x = x;
+            report_y = y;
+            printf("%s: touch@(%u,%u)\n", src, report_x, report_y);
+            fired_touchTEST_event =
+                touchTEST_event_parse(report_x, report_y, src);
+            if(fired_touchTEST_event != NULL) {
+                daemon_exec(fired_touchTEST_event->exec);
+            }
+            goto reset_flag;
+        }
+        goto reset_flag;
+    }
+    return 0;
+
+reset_flag:
+    pressure_flag = 0;
+    x_flag = 0;
+    y_flag = 0;
+    return 0;
+}
+
 static void input_parse_event(struct input_event *event, const char *src) {
     key_event_t *fired_key_event;
     switch_event_t *fired_switch_event;
@@ -376,11 +470,12 @@ static void input_parse_event(struct input_event *event, const char *src) {
         case EV_SW:
             fired_switch_event =
                 switch_event_parse(event->code, event->value, src);
-
             if(fired_switch_event != NULL) {
                 daemon_exec(fired_switch_event->exec);
             }
-
+            break;
+	case EV_ABS:
+            single_touch_event_print_and_parse(event->code, event->value, src);
             break;
     }
 }
@@ -454,6 +549,8 @@ void config_parse_file() {
             error = config_idle_event(key, value);
         } else if(strcasecmp(section, "Switches") == 0) {
             error = config_switch_event(key, value);
+        } else if(strcasecmp(section, "TouchTEST") == 0) {
+            error = config_touchTEST_event(key, value);
         } else {
             error = "Unknown section!";
             section = NULL;
@@ -569,6 +666,47 @@ static const char *config_idle_event(char *timeout, char *exec) {
         new_idle_event->timeout, conf.min_timeout);
 
     return NULL;
+}
+
+static const char *config_touchTEST_event(char *touchTESTconfig, char *exec) {
+/*
+ *    Example for touchTEST config
+ *    x,y,w,h
+ *    0,0,1000,1000 = "/run/commands/when/x_between_x1_x2_and_y_between_y1_y2"
+ */
+    touchTEST_event_t *new_touchTEST_event;
+    char *pch;
+    char x[128] = {'\0'};
+    char y[128] = {'\0'};
+    char w[128] = {'\0'};
+    char h[128] = {'\0'};
+    char *parameters[] = {x, y, w, h};
+    int cc = 0;
+    int tmp;
+    pch = strtok(touchTESTconfig, ",");
+    while (pch != NULL)
+    {
+        strcpy(parameters[cc], config_trim_string(strdup(pch)));
+        pch = strtok(NULL, ",");
+        cc++;
+    }
+    if (cc != 4) 
+        return "touchTEST Config format error!";
+
+    if(touchTEST_event_n >= MAX_EVENTS) {
+        return "touchTEST event limit exceeded!";
+    } else {
+        new_touchTEST_event = &touchTEST_events[touchTEST_event_n++];
+    }
+
+    new_touchTEST_event->x = atoi(x); 
+    new_touchTEST_event->y = atoi(y); 
+    new_touchTEST_event->w = atoi(w); 
+    new_touchTEST_event->h = atoi(h); 
+    new_touchTEST_event->exec = strdup(exec);
+
+    return NULL;
+
 }
 
 static const char *config_switch_event(char *switchcode, char *exec) {

@@ -79,6 +79,10 @@ RADIO:0 = ifconfig wlan0 down
 [Idle]
 1h 30m = vbetool dpms off
 reset  = vbetool dpms on
+
+[TouchTEST]
+340,400,3440,1860 = echo AAA
+340,2260,3440,1860 = echo BBB
 ----------------
 
 *[Global]*::
@@ -97,6 +101,11 @@ to the defined value. Switch name and value are separated by a colon.
 The commands defined in this section are executed after all input devices did
 not send any events in the specified amount of time. The special key 'RESET'
 is triggered when returning from idle.
+
+*[TouchTEST]*::
+This section defines the commands that are executed when a touch event occurs
+in a specified square area. The start point x,y and square area size width,height
+are seprated by commas like this: x,y,w,h
 
 NOTE: The idle time applies to all events, even such not handled by
 input-event-daemon (e.g. mouse movement).
